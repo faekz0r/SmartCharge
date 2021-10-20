@@ -32,7 +32,7 @@ sleep 3
 check_charge_state
 sleep 3
 
-if [ "$battery_level" -ge "$charge_limit" ]; then
+if [ $(( $battery_level + $no_charge_buffer )) -ge "$charge_limit" ]; then
 	echo "No need to charge, since charge limit is at: $charge_limit%"
 	echo "and battery level is at: $battery_level%"
 	exit
@@ -54,9 +54,18 @@ do
 	fi
 
 	wake_tesla
+	
 	charge_start
-	sleep $(( $(date +%s) - $cheap_hour_start_stripped ))
+	
+	if [ $sleep_seconds -ge 0 ]; then
+		sleep $(( $cheap_hour_start_stripped - $(date +%s) ))
+	else
+		sleep $(( $(date +%s) - $cheap_hour_start_stripped ))
+	
 	charge_stop
+
 done
 
-# charging
+sleep 10
+
+/bin/bash main.sh

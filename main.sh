@@ -60,11 +60,11 @@ do
 	
 	charge_start
 	
-	if [ $sleep_seconds -ge 0 ]; then
-		sleep $(( $cheap_hour_start_stripped - $(date +%s) ))
-	else
-		sleep $(( $(date +%s) - $cheap_hour_start_stripped ))
-	fi
+#	if [ $sleep_seconds -ge 0 ]; then
+		sleep $(( $(next_hour_epoch) - $(now_epoch) ))
+#	else
+#		sleep $(( $(date +%s) - $cheap_hour_start_stripped ))
+#	fi
 	
 	charge_stop
 

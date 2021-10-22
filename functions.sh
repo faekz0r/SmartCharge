@@ -64,6 +64,9 @@ cat sorted_prices.csv | head -n $charge_for_hours > cheap_sorted_prices.csv
 sort -k1 -n -t, cheap_sorted_prices.csv > resorted_prices.csv
 }
 
+now_epoch() { date +%s; }
+next_hour_epoch() { date -d $(date -d "next ${1- hour}" '+%H:00:00') '+%s'; }
+
 wake_tesla () {
 until curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id"/wake_up" | jq .response.state | grep -q "online";
 do

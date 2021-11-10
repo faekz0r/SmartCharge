@@ -65,7 +65,8 @@ sort -k1 -n -t, cheap_sorted_prices.csv > resorted_prices.csv
 }
 
 now_epoch() { date +%s; }
-next_hour_epoch() { date -d $(date -d "next ${1- hour}" '+%H:00:00') '+%s'; }
+next_hour_epoch() { date -d $(date -d "next hour" '+%H:00:00') '+%s'; }
+seconds_until_next_hour() { echo $(( 3600 - $(date +%s) % 3600 )); }
 
 wake_tesla () {
 until curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id"/wake_up" | jq .response.state | grep -q "online";
@@ -79,13 +80,26 @@ echo "Tesla awoken"
 
 
 check_charge_state () {
+#	while curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state | jq .response | grep -q "null";
+#	do
+#		sleep 5
+#	done
+
+while [[ -z "$battery_state_json" ]] || [[ $(echo $battery_state_json | jq .response | grep -q '"response":null') ]];
+do
 	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
+	sleep 10
+done
+
+#	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
 	battery_level=$(echo $battery_state_json | jq .response.battery_level)
 	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
 }
 
 
 time_to_charge() {
+	wake_tesla
+	check_charge_state
 	one_hour_percentage=$(echo "scale = 2; $charging_power * 100 / $battery_size" | bc)
 	seconds_to_limit=$(echo "scale = 2; ($charge_limit - $battery_level) / $one_hour_percentage * 3600" | bc )
 	charge_for_hours=$(echo "a=$seconds_to_limit; b=3600; if ( a%b ) a/b+1 else a/b" | bc)

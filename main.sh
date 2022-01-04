@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -v -x -e
 # set -o errexit
 source user_vars.sh
 source system_vars.sh

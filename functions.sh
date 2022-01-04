@@ -78,22 +78,25 @@ done
 echo "Tesla awoken"
 }
 
-
 check_charge_state () {
-#	while curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state | jq .response | grep -q "null";
-#	do
-#		sleep 5
-#	done
-
-while [[ -z "$battery_state_json" ]] || [[ $(echo $battery_state_json | jq .response | grep -q '"response":null') ]];
+sleep 5
+while [[ -z $battery_state_json ]] || [[ $(echo $battery_state_json | jq .response) = 'null' ]];
 do
 	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
 	sleep 10
 done
 
-#	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
 	battery_level=$(echo $battery_state_json | jq .response.battery_level)
 	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
+	charger_phases=$(echo $battery_state_json | jq .response.charger_phases)
+	charging_amps=$(echo $battery_state_json | jq .response.charge_current_request)
+	if [ $charger_phases -gt "1" ]
+	then
+		charging_power=$(echo "$charging_amps * 3 * 230 / 1000" | bc)
+	else
+		charging_power=$(echo "$charging_amps * 230 / 1000" | bc)
+	fi
+
 }
 
 
@@ -106,11 +109,11 @@ time_to_charge() {
 }
 
 charge_start() {
-	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_start
 	sleep 3
+	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_start
 }
 
 charge_stop() {
-	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_stop
 	sleep 3
+	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_stop
 }

@@ -56,6 +56,9 @@ get_prices () {
 
 sort_prices () {
 sort -k2 -n -t, prices.csv > sorted_prices.csv
+
+# fetch cheapest hour price only for max_price_for_high_limit
+cheapest_hour_price=$(head -n1 sorted_prices.csv | cut -d ',' -f2)
 }
 
 keep_charging_hours_only () {
@@ -99,10 +102,46 @@ done
 
 }
 
+set_charge_limit_to_max() {
+	wake_tesla
+	sleep 5
+
+	# loop as long as we get response 200
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$max_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
+		do sleep 5;
+	done;
+#	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/set_charge_limit?percent=':''$max_charge_limit'
+}
+
+set_charge_limit_to_min() {
+        wake_tesla
+        sleep 5
+
+        # loop as long as we get response 200
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$min_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit)" != "200" ]];
+                do sleep 5;
+        done;
+#       curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/set_charge_limit?percent=':''$max_charge_limit'
+}
+
 
 time_to_charge() {
 	wake_tesla
 	check_charge_state
+	
+
+	# change cheapest_hour_price to integer
+	printf -v cheapest_hour_price_int %.0f "$cheapest_hour_price"
+
+	# if cheapest hour is cheap, set charge limit to max else set charge limit to min
+	if [ "$cheapest_hour_price_int" -lt "$max_price_for_high_limit" ]; then
+		set_charge_limit_to_max
+		check_charge_state
+	else
+		set_charge_limit_to_min
+                check_charge_state
+	fi
+
 	one_hour_percentage=$(echo "scale = 2; $charging_power * 100 / $battery_size" | bc)
 	seconds_to_limit=$(echo "scale = 2; ($charge_limit - $battery_level) / $one_hour_percentage * 3600" | bc )
 	charge_for_hours=$(echo "a=$seconds_to_limit; b=3600; if ( a%b ) a/b+1 else a/b" | bc)

@@ -65,14 +65,9 @@ do
 		sleep $sleep_seconds
 	fi
 	
-	# check if we need to start charging
-#	if [ -z "$cheap_hour_start_stripped" ]; then
-#		echo "Done charging"
-#                exit 0
-#	else
-		wake_tesla
-		charge_start
-#	fi
+	wake_tesla
+
+	charge_start
 
 	# sleep till next hour to start the cycle again
 	sleep $(seconds_until_next_hour)

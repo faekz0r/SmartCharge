@@ -91,9 +91,9 @@ done
 
 	battery_level=$(echo $battery_state_json | jq .response.battery_level)
 	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
-	charger_phases=$(echo $battery_state_json | jq .response.charger_phases)
+#	charger_phases=$(echo $battery_state_json | jq .response.charger_phases)
 	charging_amps=$(echo $battery_state_json | jq .response.charge_current_request)
-	if [ $charger_phases -gt "1" ]
+	if [ $charger_amps -gt "13" ]
 	then
 		charging_power=$(echo "$charging_amps * 3 * 230 / 1000" | bc)
 	else

@@ -92,12 +92,20 @@ done
 	battery_level=$(echo $battery_state_json | jq .response.battery_level)
 	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
 #	charger_phases=$(echo $battery_state_json | jq .response.charger_phases)
-	charging_amps=$(echo $battery_state_json | jq .response.charge_current_request)
-	if [ $charging_amps -gt "13" ]
+	charging_amps_max=$(echo $battery_state_json | jq .response.charge_current_request_max)
+	
+	if [ $charging_amps_max -gt "13" ]
 	then
-		charging_power=$(echo "$charging_amps * 3 * 230 / 1000" | bc)
+		charging_power=$(echo "$charging_amps_max * 3 * 230 / 1000" | bc)
+
+		# set charging amps to max
+		sleep 3
+		while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"charging_amps" : "'$charging_amps_max'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charging_amps )" != "200" ]];
+			do sleep 3;
+		done
+			
 	else
-		charging_power=$(echo "$charging_amps * 230 / 1000" | bc)
+		charging_power=$(echo "$charging_amps_max * 230 / 1000" | bc)
 	fi
 
 }

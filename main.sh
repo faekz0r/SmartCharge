@@ -56,7 +56,7 @@ do
 
 	sleep_seconds=$(( $cheap_hour_start_stripped - $(date +%s) ))
 
-	echo "cheap_hour_start_stripped:" $cheap_hour_start_stripped
+	echo "cheap_hour_start_stripped in unix time:" $cheap_hour_start_stripped "human time:" $(date -d "@"$cheap_hour_start_stripped)
 	echo "cycle nr:" $i
 	echo "time is:" $(date)
 

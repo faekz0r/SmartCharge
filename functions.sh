@@ -82,12 +82,16 @@ echo "Tesla awoken"
 }
 
 check_charge_state () {
-sleep 5
+sleep 10
+
+battery_state_json=
+
 while [[ -z $battery_state_json ]] || [[ $(echo $battery_state_json | jq .response) = 'null' ]];
 do
 	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
 	sleep 10
 done
+
 
 	battery_level=$(echo $battery_state_json | jq .response.battery_level)
 	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
@@ -107,7 +111,6 @@ done
 	else
 		charging_power=$(echo "$charging_amps_max * 230 / 1000" | bc)
 	fi
-
 }
 
 set_charge_limit_to_max() {
@@ -118,8 +121,8 @@ set_charge_limit_to_max() {
 	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$max_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
 		do sleep 5;
 	done;
-#	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/set_charge_limit?percent=':''$max_charge_limit'
 }
+
 
 set_charge_limit_to_min() {
         wake_tesla
@@ -129,7 +132,6 @@ set_charge_limit_to_min() {
 	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$min_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit)" != "200" ]];
                 do sleep 5;
         done;
-#       curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/set_charge_limit?percent=':''$max_charge_limit'
 }
 
 
@@ -142,10 +144,10 @@ time_to_charge() {
 	printf -v cheapest_hour_price_int %.0f "$cheapest_hour_price"
 
 	# if cheapest hour is cheap, set charge limit to max else set charge limit to min
-	if [ "$cheapest_hour_price_int" -lt "$max_price_for_high_limit" ]; then
+	if [ "$cheapest_hour_price_int" -lt "$max_price_for_high_limit" ] && [ "$charge_limit" -lt "$max_charge_limit" ]; then
 		set_charge_limit_to_max
 		check_charge_state
-	else
+	elif [ "$cheapest_hour_price_int" -gt "$max_price_for_high_limit" ]; then
 		set_charge_limit_to_min
                 check_charge_state
 	fi

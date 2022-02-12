@@ -3,7 +3,6 @@
 
 ### Tesla API vars
 tesla_api_url='https://owner-api.teslamotors.com/api/1/vehicles/'
-tesla_vehicle_id=1689103270657421
 
 
 

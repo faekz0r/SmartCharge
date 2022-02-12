@@ -153,8 +153,12 @@ time_to_charge() {
 	fi
 
 	one_hour_percentage=$(echo "scale = 2; $charging_power * 100 / $battery_size" | bc)
-	seconds_to_limit=$(echo "scale = 2; ($charge_limit - $battery_level) / $one_hour_percentage * 3600" | bc )
-	charge_for_hours=$(echo "a=$seconds_to_limit; b=3600; if ( a%b ) a/b+1 else a/b" | bc)
+	seconds_to_limit=$(echo "scale = 2; ($charge_limit - $battery_level) / $one_hour_percentage * 3600" | bc | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+	if [ "$seconds_to_limit" -lt 0 ]; then
+		charge_for_hours=0
+	else
+		charge_for_hours=$(echo "a=$seconds_to_limit; b=3600; if ( a%b ) a/b+1 else a/b" | bc)
+	fi
 }
 
 charge_start() {

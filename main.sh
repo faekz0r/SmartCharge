@@ -56,9 +56,9 @@ do
 
 	sleep_seconds=$(( $cheap_hour_start_stripped - $(date +%s) ))
 
-	echo "cheap_hour_start_stripped in unix time:" $cheap_hour_start_stripped "human time:" $(date -d "@"$cheap_hour_start_stripped)
-	echo "cycle nr:" $i
-	echo "time is:" $(date)
+	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@"$cheap_hour_start_stripped)"
+	echo "cycle nr: $i of $charge_for_hours"
+	echo "time is: $(date)"
 
 	# check if we need to sleep till charge_start and start the sleep if needed
 	if [ $sleep_seconds -gt 0 ]; then

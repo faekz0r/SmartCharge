@@ -11,7 +11,7 @@ get_prices
 sort_prices
 
 # decide if charging time is to be calculated by time_to_charge function or taken from user variables
-if [ $charge_for_hours > 0 ];
+if [[ ! -z "$charge_for_hours" ]] && [ $charge_for_hours -gt 0 ];
 then
 	seconds_to_limit=$(echo "$charge_for_hours * 3600" | bc)
 else

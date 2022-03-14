@@ -13,11 +13,11 @@ get_prices () {
 	if [ $start_hour = $end_hour ]; then
 		start_epoch_time=$current_epoch
 		end_epoch_time=$current_epoch_tomorrow
-	elif [ $start_hour > $end_hour ]; then
+	elif [ $start_hour -gt $end_hour ]; then
 		if [ $current_hour -ge $start_hour ]; then
 			start_epoch_time=$current_epoch
 		else # $current_hour < $start_hour
-			if [ $current_hour < $end_hour ]; then
+			if [ $current_hour -lt $end_hour ]; then
 				start_epoch_time=$current_epoch
 			else
 				start_epoch_time=$start_epoch_today
@@ -25,7 +25,7 @@ get_prices () {
 		fi	
 		end_epoch_time=$end_epoch_tomorrow
 	else # $start_hour < $end_hour
-		if [ $current_hour < $end_hour ]; then
+		if [ $current_hour -lt $end_hour ]; then
 			end_epoch_time=$end_epoch_today
 			if [ $current_hour -ge $start_hour ]; then
 				start_epoch_time=$current_epoch

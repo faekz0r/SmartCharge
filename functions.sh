@@ -167,7 +167,10 @@ time_to_charge() {
 
 charge_start() {
 	sleep 3
-	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_start
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/charge_start)" != "200" ]];
+		do sleep 5;
+	done;
+
 }
 
 charge_stop() {

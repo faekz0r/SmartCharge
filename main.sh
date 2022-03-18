@@ -32,7 +32,7 @@ if [ -z "$charge_for_hours" ]; then
 	check_charge_state
 	sleep 3
 
-	if [ $(($battery_level + $no_charge_buffer)) -ge $charge_limit ]; then
+	if [ $((battery_level + no_charge_buffer)) -ge "$charge_limit" ]; then
 		echo "No need to charge, since charge limit is at: $charge_limit%"
 		echo "and battery level is at: $battery_level%"
 		exit
@@ -40,19 +40,19 @@ if [ -z "$charge_for_hours" ]; then
 
 fi
 
-echo "seconds_to_limit:" $seconds_to_limit
-echo "charge_for_hours:" $charge_for_hours
+echo "seconds_to_limit:" "$seconds_to_limit"
+echo "charge_for_hours:" "$charge_for_hours"
 
-for i in $(seq 1 $charge_for_hours); do
+for i in $(seq 1 "$charge_for_hours"); do
 	cheap_hour_start_csv=$(sed -n "$i"{p} resorted_prices.csv)
 	cheap_hour_start_stripped=$(echo "$cheap_hour_start_csv" | awk -F "," '{ print $1 }')
 
 	next_cheap_hour_start_csv=$(sed -n $((i + 1)){p} resorted_prices.csv)
-	next_cheap_hour_start_stripped=$(echo $next_cheap_hour_start_csv | awk -F "," '{ print $1 }')
+	next_cheap_hour_start_stripped=$(echo "$next_cheap_hour_start_csv" | awk -F "," '{ print $1 }')
 
-	sleep_seconds=$(($cheap_hour_start_stripped - $(date +%s)))
+	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s)))
 
-	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@"$cheap_hour_start_stripped)"
+	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
 	echo "cycle nr: $i of $charge_for_hours"
 	echo "time is: $(date)"
 
@@ -66,7 +66,7 @@ for i in $(seq 1 $charge_for_hours); do
 	charge_start
 
 	# sleep till next hour to start the cycle again
-	sleep $(seconds_until_next_hour)
+	sleep "$(seconds_until_next_hour)"
 
 	# check if any hours left to charge
 	if [ -z "$next_cheap_hour_start_stripped" ]; then
@@ -76,7 +76,7 @@ for i in $(seq 1 $charge_for_hours); do
 	fi
 
 	# check if we need to stop charging till next cheap hour
-	seconds_to_next_cheap=$((($next_cheap_hour_start_stripped) - $(date +%s)))
+	seconds_to_next_cheap=$(((next_cheap_hour_start_stripped) - $(date +%s)))
 	if [ $seconds_to_next_cheap -gt 60 ]; then
 		charge_stop
 	fi

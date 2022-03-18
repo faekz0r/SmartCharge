@@ -1,44 +1,21 @@
 #!/bin/bash
 
 get_prices () {
-	current_hour=$( date '+%H')
-	current_epoch=$( date -d 'today '$current_hour'' +%s )
-	current_epoch_tomorrow=$( date -d 'tomorrow '$current_hour'' +%s )
-	start_epoch_today=$( date -d 'today '$start_hour'' +%s )
-	start_epoch_tomorrow=$( date -d 'tomorrow '$start_hour'' +%s )
+
 	end_epoch_today=$( date -d 'today '$end_hour'' +%s)
 	end_epoch_tomorrow=$( date -d 'tomorrow '$end_hour'' +%s )
 	
-	echo "current_hour:" $current_hour
-	if [ $start_hour = $end_hour ]; then
-		start_epoch_time=$current_epoch
-		end_epoch_time=$current_epoch_tomorrow
-	elif [ $start_hour -gt $end_hour ]; then
-		if [ $current_hour -ge $start_hour ]; then
-			start_epoch_time=$current_epoch
-		else # $current_hour < $start_hour
-			if [ $current_hour -lt $end_hour ]; then
-				start_epoch_time=$current_epoch
-			else
-				start_epoch_time=$start_epoch_today
-			fi
-		fi	
+	if [ $start_hour -gt $end_hour ]; then
 		end_epoch_time=$end_epoch_tomorrow
-	else # $start_hour < $end_hour
-		if [ $current_hour -lt $end_hour ]; then
-			end_epoch_time=$end_epoch_today
-			if [ $current_hour -ge $start_hour ]; then
-				start_epoch_time=$current_epoch
-			else
-			# $current_hour < $start_hour
-				start_epoch_time=$start_epoch_today
-			fi
-		else # $current_hour >= $end_hour
-			start_epoch_time=$start_epoch_tomorrow
-			end_epoch_time=$end_epoch_tomorrow
-		fi
+	elif [ $start_hour -lt $end_hour ]; then
+		end_epoch_time=$end_epoch_today
+	else
+		end_epoch_time=$end_epoch_tomorrow
 	fi
+
+	$start_epoch_time=$( date +%s )
 	
+
 	start_year=$(TZ=GMT date -d @$start_epoch_time +%Y)
 	start_month=$(TZ=GMT date -d @$start_epoch_time +%m)
 	start_day=$(TZ=GMT date -d @$start_epoch_time +%d)

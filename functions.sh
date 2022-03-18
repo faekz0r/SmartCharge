@@ -2,31 +2,31 @@
 
 get_prices () {
 
-	end_epoch_today=$( date -d 'today '$end_hour'' +%s)
-	end_epoch_tomorrow=$( date -d 'tomorrow '$end_hour'' +%s )
+	end_epoch_today=$( date -d 'today '"$end_hour"'' +%s)
+	end_epoch_tomorrow=$( date -d 'tomorrow '"$end_hour"'' +%s )
 	
-	if [ $start_hour -gt $end_hour ]; then
+	if [ "$start_hour" -gt "$end_hour" ]; then
 		end_epoch_time=$end_epoch_tomorrow
-	elif [ $start_hour -lt $end_hour ]; then
+	elif [ "$start_hour" -lt "$end_hour" ]; then
 		end_epoch_time=$end_epoch_today
 	else
 		end_epoch_time=$end_epoch_tomorrow
 	fi
 
-	$start_epoch_time=$( date +%s )
+	start_epoch_time=$( date +%s )
 	
 
-	start_year=$(TZ=GMT date -d @$start_epoch_time +%Y)
-	start_month=$(TZ=GMT date -d @$start_epoch_time +%m)
-	start_day=$(TZ=GMT date -d @$start_epoch_time +%d)
-	start_hour_gmt=$(TZ=GMT date -d @$start_epoch_time +%H)
+	start_year=$(TZ=GMT date -d @"$start_epoch_time" +%Y)
+	start_month=$(TZ=GMT date -d @"$start_epoch_time" +%m)
+	start_day=$(TZ=GMT date -d @"$start_epoch_time" +%d)
+	start_hour_gmt=$(TZ=GMT date -d @"$start_epoch_time" +%H)
 	
-	end_year=$(TZ=GMT date -d @$end_epoch_time +%Y)
-	end_month=$(TZ=GMT date -d @$end_epoch_time +%m)
-	end_day=$(TZ=GMT date -d @$end_epoch_time +%d)
-	end_hour_gmt=$(TZ=GMT date -d @$end_epoch_time +%H)
+	end_year=$(TZ=GMT date -d @"$end_epoch_time" +%Y)
+	end_month=$(TZ=GMT date -d @"$end_epoch_time" +%m)
+	end_day=$(TZ=GMT date -d @"$end_epoch_time" +%d)
+	end_hour_gmt=$(TZ=GMT date -d @"$end_epoch_time" +%H)
 	
-	prices=$($elering_api_curl$start_year-$start_month-$start_day"%20"$start_hour_gmt"%3A00&end="$end_year-$end_month-$end_day"%20"$end_hour_gmt"%3A00" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
+	prices=$("$elering_api_curl$start_year-$start_month-$start_day%20$start_hour_gmt%3A00&end=$end_year-$end_month-$end_day%20$end_hour_gmt%3A00" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
 	
 	echo "$prices" > 'prices.csv'
 }
@@ -39,7 +39,7 @@ cheapest_hour_price=$(head -n1 sorted_prices.csv | cut -d ',' -f2)
 }
 
 keep_charging_hours_only () {
-cat sorted_prices.csv | head -n $charge_for_hours > cheap_sorted_prices.csv
+< sorted_prices.csv head -n "$charge_for_hours" > cheap_sorted_prices.csv
 # sort by time
 sort -k1 -n -t, cheap_sorted_prices.csv > resorted_prices.csv
 }
@@ -49,10 +49,10 @@ next_hour_epoch() { date -d $(date -d "next hour" '+%H:00:00') '+%s'; }
 seconds_until_next_hour() { echo $(( 3600 - $(date +%s) % 3600 )); }
 
 wake_tesla () {
-until curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id"/wake_up" | jq .response.state | grep -q "online";
+until curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up" | jq .response.state | grep -q "online";
 do
 	sleep 5;
-	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id"/wake_up"
+	curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up"
 	sleep 10;
 done
 echo "Tesla awoken"
@@ -63,25 +63,25 @@ sleep 10
 
 battery_state_json=
 
-while [[ -z $battery_state_json ]] || [[ $(echo $battery_state_json | jq .response) = 'null' ]];
+while [[ -z $battery_state_json ]] || [[ $(echo "$battery_state_json" | jq .response) = 'null' ]];
 do
-	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/data_request/charge_state)
+	battery_state_json=$(curl --request GET -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/data_request/charge_state")
 	sleep 10
 done
 
 
-	battery_level=$(echo $battery_state_json | jq .response.battery_level)
-	charge_limit=$(echo $battery_state_json | jq .response.charge_limit_soc)
+	battery_level=$(echo "$battery_state_json" | jq .response.battery_level)
+	charge_limit=$(echo "$battery_state_json" | jq .response.charge_limit_soc)
 #	charger_phases=$(echo $battery_state_json | jq .response.charger_phases)
-	charging_amps_max=$(echo $battery_state_json | jq .response.charge_current_request_max)
+	charging_amps_max=$(echo "$battery_state_json" | jq .response.charge_current_request_max)
 	
-	if [ $charging_amps_max -gt "13" ]
+	if [ "$charging_amps_max" -gt "13" ]
 	then
 		charging_power=$(echo "$charging_amps_max * 3 * 230 / 1000" | bc)
 
 		# set charging amps to max
 		sleep 3
-		while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"charging_amps" : "'$charging_amps_max'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charging_amps )" != "200" ]];
+		while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"charging_amps" : "'"$charging_amps_max"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charging_amps )" != "200" ]];
 			do sleep 3;
 		done
 			
@@ -95,7 +95,7 @@ set_charge_limit_to_max() {
 	sleep 5
 
 	# loop as long as we get response 200
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$max_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"percent" : "'"$max_charge_limit"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
 		do sleep 5;
 	done;
 }
@@ -106,7 +106,7 @@ set_charge_limit_to_min() {
         sleep 5
 
         # loop as long as we get response 200
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -H "Content-Type: application/json" --data '{"percent" : "'$min_charge_limit'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit)" != "200" ]];
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"percent" : "'"$min_charge_limit"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit)" != "200" ]];
                 do sleep 5;
         done;
 
@@ -144,7 +144,7 @@ time_to_charge() {
 
 charge_start() {
 	sleep 3
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '$bearer_token'' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/charge_start)" != "200" ]];
+	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -o /dev/null -s -w "%{http_code}" "$tesla_api_url$tesla_vehicle_id/command/charge_start")" != "200" ]];
 		do sleep 5;
 	done;
 
@@ -152,5 +152,5 @@ charge_start() {
 
 charge_stop() {
 	sleep 3
-	curl --request POST -H 'Authorization: Bearer '$bearer_token'' $tesla_api_url$tesla_vehicle_id/command/charge_stop
+	curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/command/charge_stop"
 }

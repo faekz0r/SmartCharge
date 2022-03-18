@@ -34,7 +34,7 @@ fi
 
 
 ### Elering API
-elering_api_curl='curl -X GET "https://dashboard.elering.ee/api/nps/price?start='
+elering_api_curl='curl -X GET https://dashboard.elering.ee/api/nps/price?start='
 
 
 ### Time vars

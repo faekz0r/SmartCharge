@@ -6,7 +6,6 @@
 . private_vars.sh
 
 # Charging window start & end
-start_hour="19"
 end_hour="8"
 
 # How many hours you want to charge for daily (overrides automatic calculation based on limit)

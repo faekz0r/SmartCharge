@@ -2,9 +2,12 @@
 
 get_prices () {
 
+	start_hour=$( date '+%H')
+
 	end_epoch_today=$( date -d 'today '"$end_hour"'' +%s)
 	end_epoch_tomorrow=$( date -d 'tomorrow '"$end_hour"'' +%s )
 	
+
 	if [ "$start_hour" -gt "$end_hour" ]; then
 		end_epoch_time=$end_epoch_tomorrow
 	elif [ "$start_hour" -lt "$end_hour" ]; then

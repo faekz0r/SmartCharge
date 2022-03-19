@@ -101,6 +101,10 @@ set_charge_limit_to_max() {
 	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"percent" : "'"$max_charge_limit"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
 		do sleep 5;
 	done;
+	
+	# in case Tesla automatically starts charging when increasing the limit
+	sleep 5
+	charge_stop
 }
 
 

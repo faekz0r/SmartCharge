@@ -29,8 +29,8 @@ get_prices () {
 	end_day=$(TZ=GMT date -d @"$end_epoch_time" +%d)
 	end_hour_gmt=$(TZ=GMT date -d @"$end_epoch_time" +%H)
 	
-	prices=$("$elering_api_curl""$start_year"-"$start_month"-"$start_day""%20""$start_hour_gmt""%3A00&end=""$end_year"-"$end_month"-"$end_day""%20""$end_hour_gmt""%3A00" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
-	
+	prices=$($elering_api_curl$start_year-$start_month-$start_day"%20"$start_hour_gmt"%3A00&end="$end_year-$end_month-$end_day"%20"$end_hour_gmt"%3A00" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
+
 	echo "$prices" > 'prices.csv'
 }
 

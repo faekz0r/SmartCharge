@@ -24,13 +24,13 @@ keep_charging_hours_only
 echo "resorted_prices.csv:"
 cat resorted_prices.csv
 
-if [ -z "$charge_for_hours" ]; then
+if [ "$charge_for_hours" -eq "0" ] || [ -z "$charge_for_hours" ]; then
 
-	wake_tesla
-	sleep 15
+#	wake_tesla
+#	sleep 15
 
-	check_charge_state
-	sleep 3
+#	check_charge_state
+#	sleep 3
 
 	if [ $((battery_level + no_charge_buffer)) -ge "$charge_limit" ]; then
 		echo "No need to charge, since charge limit is at: $charge_limit%"

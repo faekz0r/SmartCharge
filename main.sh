@@ -5,6 +5,9 @@ source user_vars.sh
 source system_vars.sh
 source functions.sh
 
+# timestamp last run
+echo "$(LC_ALL="et_EE.UTF-8" date "+%T %A %d/%m")" > last_ran_date
+
 get_prices
 
 sort_prices

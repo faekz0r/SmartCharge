@@ -127,7 +127,8 @@ time_to_charge() {
 	wake_tesla
 	check_charge_state
 	
-
+	# change locale to en_US to process dotted floating point input numbers correctly
+	export LC_NUMERIC="en_US.UTF-8"
 	# change cheapest_hour_price to integer
 	printf -v cheapest_hour_price_int %.0f "$cheapest_hour_price"
 

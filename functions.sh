@@ -29,9 +29,17 @@ get_prices () {
 	end_day=$(TZ=GMT date -d @"$end_epoch_time" +%d)
 	end_hour_gmt=$(TZ=GMT date -d @"$end_epoch_time" +%H)
 	
-	prices=$($elering_api_curl$start_year-$start_month-$start_day"%20"$start_hour_gmt"%3A00&end="$end_year-$end_month-$end_day"%20"$end_hour_gmt"%3A00" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
+	prices=$($elering_api_curl$start_year-$start_month-$start_day"T"$start_hour_gmt"%3A00%3A00.000Z&end="$end_year-$end_month-$end_day"T"$end_hour_gmt"%3A00%3A00.000Z" | jq -r '.data.ee | map([(.timestamp|tostring), (.price|tostring)] | join(", ")) | join("\n")')
 
 	echo "$prices" > 'prices.csv'
+}
+
+refresh_bearer_token () {
+	bearer_token=$(printf '{
+	    "grant_type": "refresh_token",
+	    "client_id": "ownerapi",
+	    "refresh_token": "'$refresh_token'"
+	}'| http --follow --timeout 10 POST 'https://auth.tesla.com/oauth2/v3/token' Accept:'application/json' Content-Type:'application/json' -p b | jq -r .access_token)
 }
 
 sort_prices () {
@@ -133,7 +141,7 @@ time_to_charge() {
 	printf -v cheapest_hour_price_int %.0f "$cheapest_hour_price"
 
 	# if cheapest hour is cheap, set charge limit to max else set charge limit to min
-	if [ "$cheapest_hour_price_int" -lt "$max_price_for_high_limit" ] && [ "$charge_limit" -lt "$max_charge_limit" ]; then
+	if [ "$cheapest_hour_price_int" -lt "$max_price_for_high_limit" ]; then # && [ "$charge_limit" -lt "$max_charge_limit" ]; then
 		set_charge_limit_to_max
 		check_charge_state
 	elif [ "$cheapest_hour_price_int" -gt "$max_price_for_high_limit" ]; then

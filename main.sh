@@ -1,9 +1,23 @@
 #!/bin/bash
+
+# enable debugging
 set -v -x -e
 # set -o errexit
+
+
+# check if already running and exit if true
+if ! mkdir /tmp/SmartCharge.lock 2>/dev/null; then
+    echo "SmartCharge is already running. Exiting" >&2
+    exit 1
+fi
+
+trap 'rm -rf /tmp/SmartCharge.lock' EXIT
+
 source user_vars.sh
 source system_vars.sh
 source functions.sh
+
+
 
 # timestamp last run
 echo "$(LC_ALL="et_EE.UTF-8" date "+%T %A %d/%m")" > last_ran_date
@@ -11,6 +25,8 @@ echo "$(LC_ALL="et_EE.UTF-8" date "+%T %A %d/%m")" > last_ran_date
 get_prices
 
 sort_prices
+
+refresh_bearer_token
 
 # decide if charging time is to be calculated by time_to_charge function or taken from user variables
 if [[ -n "$charge_for_hours" ]] && [ "$charge_for_hours" -gt 0 ]; then
@@ -43,8 +59,9 @@ if [ "$charge_for_hours" -eq "0" ] || [ -z "$charge_for_hours" ]; then
 
 fi
 
-echo "seconds_to_limit:" "$seconds_to_limit"
-echo "charge_for_hours:" "$charge_for_hours"
+
+echo "\nseconds_to_limit:" "$seconds_to_limit\n"
+echo "\ncharge_for_hours:" "$charge_for_hours\n"
 
 for i in $(seq 1 "$charge_for_hours"); do
 	cheap_hour_start_csv=$(sed -n "$i"{p} resorted_prices.csv)
@@ -55,7 +72,8 @@ for i in $(seq 1 "$charge_for_hours"); do
 
 	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s)))
 
-	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
+#	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
+	echo "cheap hour start: $(date -d "@""$cheap_hour_start_stripped")"
 	echo "cycle nr: $i of $charge_for_hours"
 	echo "time is: $(date)"
 
@@ -63,6 +81,8 @@ for i in $(seq 1 "$charge_for_hours"); do
 	if [ $sleep_seconds -gt 0 ]; then
 		sleep $sleep_seconds
 	fi
+
+	refresh_bearer_token
 
 	wake_tesla
 

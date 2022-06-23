@@ -57,7 +57,7 @@ sort -k1 -n -t, cheap_sorted_prices.csv > resorted_prices.csv
 
 now_epoch() { date +%s; }
 next_hour_epoch() { date -d "$(date -d "next hour" '+%H:00:00')" '+%s'; }
-seconds_until_next_hour() { echo $(( 3600 - $(date +%s) % 3600 )); }
+sleep_till_next_hour() { sleep $(( 3600 - $(date +%s) % 3600 )); }
 
 wake_tesla () {
 until curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up" | jq .response.state | grep -q "online";
@@ -163,6 +163,7 @@ charge_start() {
 	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -o /dev/null -s -w "%{http_code}" "$tesla_api_url$tesla_vehicle_id/command/charge_start")" != "200" ]];
 		do sleep 5;
 	done;
+	echo "Started charging at: "$(date);
 
 }
 

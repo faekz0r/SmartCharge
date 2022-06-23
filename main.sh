@@ -70,7 +70,7 @@ for i in $(seq 1 "$charge_for_hours"); do
 	next_cheap_hour_start_csv=$(sed -n $((i + 1)){p} resorted_prices.csv)
 	next_cheap_hour_start_stripped=$(echo "$next_cheap_hour_start_csv" | awk -F "," '{ print $1 }')
 
-	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s)))
+	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s) - 20))
 
 #	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
 	echo "cheap hour start: $(date -d "@""$cheap_hour_start_stripped")"
@@ -89,7 +89,7 @@ for i in $(seq 1 "$charge_for_hours"); do
 	charge_start
 
 	# sleep till next hour to start the cycle again
-	sleep "$(seconds_until_next_hour)"
+	sleep_till_next_hour
 
 	# check if any hours left to charge
 	if [ -z "$next_cheap_hour_start_stripped" ]; then

@@ -70,7 +70,7 @@ for i in $(seq 1 "$charge_for_hours"); do
 	next_cheap_hour_start_csv=$(sed -n $((i + 1)){p} resorted_prices.csv)
 	next_cheap_hour_start_stripped=$(echo "$next_cheap_hour_start_csv" | awk -F "," '{ print $1 }')
 
-	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s) - 20))
+	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s) - 10))
 
 #	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
 	echo "cheap hour start: $(date -d "@""$cheap_hour_start_stripped")"

@@ -13,10 +13,10 @@ end_hour="12"
 charge_for_hours=""
 
 # Set maximum €/mWh price (divide by 10 to get kwh/cents) in integer cents to automatically set charge limit to max_charge_limit (expressed in %)
-max_price_for_high_limit="77"
+max_price_for_high_limit="150"
 
 # Charging limits % (price low or high)
-max_charge_limit="80"
+max_charge_limit="90"
 min_charge_limit="50"
 
 # Your charger power in kW (legacy - has been automated)

@@ -66,7 +66,7 @@ do
 	curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up"
 	sleep 10;
 done
-echo "Tesla awoken"
+echo "Tesla awoken @ $(date)"
 }
 
 check_charge_state () {

@@ -31,6 +31,7 @@ refresh_bearer_token
 # decide if charging time is to be calculated by time_to_charge function or taken from user variables
 if [[ -n "$charge_for_hours" ]] && [ "$charge_for_hours" -gt 0 ]; then
 	seconds_to_limit=$(echo "$charge_for_hours * 3600" | bc)
+	set_charge_limit_to_max
 else
 	time_to_charge
 fi
@@ -70,7 +71,7 @@ for i in $(seq 1 "$charge_for_hours"); do
 	next_cheap_hour_start_csv=$(sed -n $((i + 1)){p} resorted_prices.csv)
 	next_cheap_hour_start_stripped=$(echo "$next_cheap_hour_start_csv" | awk -F "," '{ print $1 }')
 
-	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s) - 10))
+	sleep_seconds=$((cheap_hour_start_stripped - $(date +%s) ))
 
 #	echo "cheap_hour_start_stripped in unix time: $cheap_hour_start_stripped human time: $(date -d "@""$cheap_hour_start_stripped")"
 	echo "cheap hour start: $(date -d "@""$cheap_hour_start_stripped")"

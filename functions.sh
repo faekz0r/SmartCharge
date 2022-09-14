@@ -43,7 +43,7 @@ refresh_bearer_token () {
 }
 
 sort_prices () {
-sort -k2 -n -t, prices.csv > sorted_prices.csv
+sort -k2 -g -t, prices.csv > sorted_prices.csv
 
 # fetch cheapest hour price only for max_price_for_high_limit
 cheapest_hour_price=$(head -n1 sorted_prices.csv | cut -d ',' -f2)

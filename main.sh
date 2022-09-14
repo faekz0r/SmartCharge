@@ -106,3 +106,5 @@ for i in $(seq 1 "$charge_for_hours"); do
 	fi
 
 done
+
+cp main.log "logs/main.log.$(date '+%Y-%m-%d_%H-%M-%S')"

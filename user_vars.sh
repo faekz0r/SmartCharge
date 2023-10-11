@@ -7,16 +7,16 @@
 
 # Charging window start & end
 start_hour=""
-end_hour="8"
+end_hour="12"
 
 # How many hours you want to charge for daily (overrides automatic calculation based on limit)
-charge_for_hours=""
+charge_for_hours="1"
 
 # Set maximum €/mWh price (divide by 10 to get kwh/cents) in integer cents to automatically set charge limit to max_charge_limit (expressed in %)
-max_price_for_high_limit="130"
+max_price_for_high_limit="100"
 
 # Charging limits % (price low or high)
-max_charge_limit="85"
+max_charge_limit="75"
 min_charge_limit="50"
 
 # Your charger power in kW (legacy - has been automated)

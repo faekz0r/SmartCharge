@@ -14,7 +14,9 @@ It's mostly written in Bash, because it was the language I was most familiar wit
 
 There's also a frontend for it [here](https://github.com/faekz0r/SmartCharge-frontend), which uses some php and js.
 
-## Disclaimer
+## Disclaimer / background
+This project was started after I was fed up with a public solution, that was bugging out too often - waking up my Tesla when not needed & not charging at the correct times etc. So I took the matter in my own hands. :)
+
 I'm not a professional developer so I am well aware that this could have been done much more eloquently and quicker and if you have suggestions for improvements, please push. :)
 
 Also I wrote this purely for myself with no plans to publish it, so it may contain hardcoded variables specific to my setup.

@@ -1,14 +1,8 @@
 <?php
 
-// Validate and sanitize input (this is a simplified example; you should expand on this)
-$validated_post_data = [];
-foreach ($_POST as $key => $value) {
-    // Add your validation logic here
-    $validated_post_data[$key] = escapeshellarg($value);
-}
+$vars_in_json_array=json_encode($_POST);
 
-// Convert to JSON
-$vars_in_json_array = json_encode($validated_post_data);
+echo json_encode($_POST);
 
 // Prepare the jq command
 $jq_to_bash = "jq -r 'to_entries | .[] | .key + \"=\" + (.value | @sh)' > vars";
@@ -25,5 +19,6 @@ if ($return_var !== 0) {
 
 // Return a success response (you can customize this)
 echo json_encode(['status' => 'success']);
+
 
 ?>

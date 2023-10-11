@@ -62,27 +62,77 @@ tesla_api_call() {
     local method=$1
     local endpoint=$2
     local data=$3
+    local max_retries=50
+    local retry_delay=10
 
-    local headers="Authorization: Bearer $bearer_token"
+    local auth_header="Authorization: Bearer $bearer_token"
     local url="$tesla_api_url$tesla_vehicle_id/$endpoint"
 
-    if [ "$method" == "POST" ]; then
-        curl --request POST -H "$headers" --data "$data" "$url"
-    elif [ "$method" == "GET" ]; then
-        curl --request GET -H "$headers" "$url"
-    else
-        echo "Unsupported method: $method"
-        return 1
-    fi
+    local http_status
+    local api_response
+    local response_file=$(mktemp)
+    local retries=0
+
+    while [ $retries -lt $max_retries ]; do
+        if [ "$method" == "POST" ]; then
+            if [ -z "$data" ]; then
+                http_status=$(curl -s -o "$response_file" -w "%{http_code}" --request POST -H "$auth_header" "$url")
+            else
+                http_status=$(curl -s -o "$response_file" -w "%{http_code}" --request POST -H "$auth_header" -H "Content-Type: application/json" --data "$data" "$url")
+            fi
+        elif [ "$method" == "GET" ]; then
+            http_status=$(curl -s -o "$response_file" -w "%{http_code}" --request GET -H "$auth_header" "$url")
+        else
+            echo "{\"http_status\": \"1\", \"response\": \"Unsupported method: $method\"}" >&2
+            return 1
+        fi
+
+        if [ "$http_status" -ge 200 ] && [ "$http_status" -lt 300 ]; then
+            api_response=$(cat "$response_file")
+            echo "{\"http_status\": \"$http_status\", \"response\": $api_response}"
+            rm -f "$response_file"
+            return 0
+        else
+            echo "Request failed, HTTP status: $http_status. Retrying..." >&2
+            sleep $retry_delay
+            ((retries++))
+        fi
+    done
+
+    echo "Max retries reached. Exiting." >&2
+    rm -f "$response_file"
+    sleep 5
+    return 1
 }
 
 
+
+
+
 refresh_bearer_token () {
-	bearer_token=$(printf '{
-	    "grant_type": "refresh_token",
-	    "client_id": "ownerapi",
-	    "refresh_token": "'$refresh_token'"
-	}'| http --follow --timeout 10 POST 'https://auth.tesla.com/oauth2/v3/token' Accept:'application/json' Content-Type:'application/json' -p b | jq -r .access_token)
+    response=$(printf '{
+        "grant_type": "refresh_token",
+        "client_id": "ownerapi",
+        "refresh_token": "'$refresh_token'"
+    }' | http --follow --timeout 10 POST 'https://auth.tesla.com/oauth2/v3/token' Accept:'application/json' Content-Type:'application/json' -p b 2>&1)
+
+    # Check if the HTTP request was successful
+    if [[ $? -ne 0 ]]; then
+        echo "HTTP request failed. Response was: $response"
+        return 1
+    fi
+
+    # Extract the access token using jq
+    bearer_token=$(echo "$response" | jq -r .access_token)
+
+    # Check if jq command was successful and if the token is not null or empty
+    if [[ $? -ne 0 || -z "$bearer_token" ]]; then
+        echo "Failed to extract access token. Response was: $response"
+        return 1
+    fi
+
+    # If we reach here, everything was successful
+    echo "Successfully refreshed the bearer token."
 }
 
 sort_prices () {
@@ -106,7 +156,7 @@ sleep_till_next_hour() { sleep $(( 3600 - $(date +%s) % 3600 )); }
 wake_tesla () {
     until tesla_api_call "POST" "wake_up" "" | jq .response.state | grep -q "online";
     do
-        sleep 5;
+        sleep 10;
         tesla_api_call "POST" "wake_up" ""
         sleep 10;
     done
@@ -115,15 +165,7 @@ wake_tesla () {
 
 
 check_charge_state () {
-    sleep 10
-
-    battery_state_json=
-
-    while [[ -z $battery_state_json ]] || [[ $(echo "$battery_state_json" | jq .response.charge_state) = 'null' ]];
-    do
-        battery_state_json=$(tesla_api_call "GET" "vehicle_data" "")
-        sleep 10
-    done
+    battery_state_json=$(tesla_api_call "GET" "vehicle_data" "")
 
     charge_state=$(echo "$battery_state_json" | jq .response.charge_state)
     battery_level=$(echo "$charge_state" | jq .battery_level)
@@ -135,13 +177,8 @@ check_charge_state () {
         charging_power=$(echo "$charging_amps_max * 3 * 230 / 1000" | bc)
 
         # set charging amps to max
-        sleep 3
         local data="{\"charging_amps\" : \"$charging_amps_max\"}"
-        while [[ "$(tesla_api_call "POST" "command/set_charging_amps" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
-        do
-            sleep 3;
-        done
-
+        tesla_api_call "POST" "command/set_charging_amps" "$data"
     else
         charging_power=$(echo "$charging_amps_max * 230 / 1000" | bc)
     fi
@@ -150,32 +187,16 @@ check_charge_state () {
 
 set_charge_limit_to_max() {
     wake_tesla
-    sleep 5
-
     local data="{\"percent\" : \"$max_charge_limit\"}"
-
-    while [[ "$(tesla_api_call "POST" "command/set_charge_limit" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
-    do
-        sleep 5;
-    done;
-
-    sleep 5
+    tesla_api_call "POST" "command/set_charge_limit" "$data"
     charge_stop
 }
 
 
 set_charge_limit_to_min() {
     wake_tesla
-    sleep 5
-
     local data="{\"percent\" : \"$min_charge_limit\"}"
-
-    while [[ "$(tesla_api_call "POST" "command/set_charge_limit" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
-    do
-        sleep 5;
-    done;
-
-    sleep 5
+    tesla_api_call "POST" "command/set_charge_limit" "$data"
     charge_stop
 }
 
@@ -210,11 +231,8 @@ time_to_charge() {
 
 charge_start() {
     sleep 3
-    while [[ "$(tesla_api_call "POST" "command/charge_start" "" -o /dev/null -s -w "%{http_code}")" != "200" ]];
-    do
-        sleep 5;
-    done;
-    echo "Started charging at: "$(date);
+    tesla_api_call "POST" "command/charge_start" ""
+    echo "Started charging at: "$(date)
 }
 
 

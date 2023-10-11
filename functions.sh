@@ -57,6 +57,26 @@ get_prices () {
 	echo "$prices" > 'prices.csv'
 }
 
+# Function to make Tesla API calls
+tesla_api_call() {
+    local method=$1
+    local endpoint=$2
+    local data=$3
+
+    local headers="Authorization: Bearer $bearer_token"
+    local url="$tesla_api_url$tesla_vehicle_id/$endpoint"
+
+    if [ "$method" == "POST" ]; then
+        curl --request POST -H "$headers" --data "$data" "$url"
+    elif [ "$method" == "GET" ]; then
+        curl --request GET -H "$headers" "$url"
+    else
+        echo "Unsupported method: $method"
+        return 1
+    fi
+}
+
+
 refresh_bearer_token () {
 	bearer_token=$(printf '{
 	    "grant_type": "refresh_token",
@@ -84,14 +104,15 @@ sleep_till_next_hour() { sleep $(( 3600 - $(date +%s) % 3600 )); }
 
 
 wake_tesla () {
-until curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up" | jq .response.state | grep -q "online";
-do
-	sleep 5;
-	curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/wake_up"
-	sleep 10;
-done
-echo "Tesla awoken @ $(date)"
+    until tesla_api_call "POST" "wake_up" "" | jq .response.state | grep -q "online";
+    do
+        sleep 5;
+        tesla_api_call "POST" "wake_up" ""
+        sleep 10;
+    done
+    echo "Tesla awoken @ $(date)"
 }
+
 
 check_charge_state () {
     sleep 10
@@ -100,7 +121,7 @@ check_charge_state () {
 
     while [[ -z $battery_state_json ]] || [[ $(echo "$battery_state_json" | jq .response.charge_state) = 'null' ]];
     do
-        battery_state_json=$(curl --request GET -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/vehicle_data")
+        battery_state_json=$(tesla_api_call "GET" "vehicle_data" "")
         sleep 10
     done
 
@@ -115,8 +136,9 @@ check_charge_state () {
 
         # set charging amps to max
         sleep 3
-        while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"charging_amps" : "'"$charging_amps_max"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charging_amps )" != "200" ]];
-        do 
+        local data="{\"charging_amps\" : \"$charging_amps_max\"}"
+        while [[ "$(tesla_api_call "POST" "command/set_charging_amps" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
+        do
             sleep 3;
         done
 
@@ -127,33 +149,36 @@ check_charge_state () {
 
 
 set_charge_limit_to_max() {
-	wake_tesla
-	sleep 5
+    wake_tesla
+    sleep 5
 
-	# loop as long as we get response 200
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"percent" : "'"$max_charge_limit"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit )" != "200" ]];
-		do sleep 5;
-	done;
-	
-	# in case Tesla automatically starts charging when increasing the limit
-	sleep 5
-	charge_stop
+    local data="{\"percent\" : \"$max_charge_limit\"}"
+
+    while [[ "$(tesla_api_call "POST" "command/set_charge_limit" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
+    do
+        sleep 5;
+    done;
+
+    sleep 5
+    charge_stop
 }
 
 
 set_charge_limit_to_min() {
-        wake_tesla
-        sleep 5
+    wake_tesla
+    sleep 5
 
-        # loop as long as we get response 200
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -H "Content-Type: application/json" --data '{"percent" : "'"$min_charge_limit"'"}' -o /dev/null -s -w "%{http_code}" $tesla_api_url$tesla_vehicle_id/command/set_charge_limit)" != "200" ]];
-                do sleep 5;
-        done;
+    local data="{\"percent\" : \"$min_charge_limit\"}"
 
-	# in case Tesla automatically starts charging when increasing the limit
-	sleep 5
-	charge_stop
+    while [[ "$(tesla_api_call "POST" "command/set_charge_limit" "$data" -o /dev/null -s -w "%{http_code}")" != "200" ]];
+    do
+        sleep 5;
+    done;
+
+    sleep 5
+    charge_stop
 }
+
 
 
 time_to_charge() {
@@ -184,18 +209,20 @@ time_to_charge() {
 }
 
 charge_start() {
-	sleep 3
-	while [[ "$(curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' -o /dev/null -s -w "%{http_code}" "$tesla_api_url$tesla_vehicle_id/command/charge_start")" != "200" ]];
-		do sleep 5;
-	done;
-	echo "Started charging at: "$(date);
-
+    sleep 3
+    while [[ "$(tesla_api_call "POST" "command/charge_start" "" -o /dev/null -s -w "%{http_code}")" != "200" ]];
+    do
+        sleep 5;
+    done;
+    echo "Started charging at: "$(date);
 }
+
 
 charge_stop() {
-	sleep 3
-	curl --request POST -H 'Authorization: Bearer '"$bearer_token"'' "$tesla_api_url$tesla_vehicle_id/command/charge_stop"
+    sleep 3
+    tesla_api_call "POST" "command/charge_stop" ""
 }
+
 
 decide_charge_time() {
     if [[ -n "$charge_for_hours" ]] && [ "$charge_for_hours" -gt 0 ]; then

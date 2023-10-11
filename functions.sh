@@ -93,7 +93,7 @@ tesla_api_call() {
             rm -f "$response_file"
             return 0
         else
-            echo "Request failed, HTTP status: $http_status. Retrying..." >&2
+            echo "Request failed, HTTP status: $http_status. API response: $api_response. Retrying..." >&2
             sleep $retry_delay
             ((retries++))
         fi
@@ -154,12 +154,18 @@ sleep_till_next_hour() { sleep $(( 3600 - $(date +%s) % 3600 )); }
 
 
 wake_tesla () {
-    until tesla_api_call "POST" "wake_up" "" | jq .response.state | grep -q "online";
-    do
-        sleep 10;
-        tesla_api_call "POST" "wake_up" ""
-        sleep 10;
+    local api_output
+    local api_state
+
+    until [[ "$api_state" == "online" ]]; do
+        api_output=$(tesla_api_call "POST" "wake_up" "")
+        api_state=$(echo "$api_output" | jq -r '.response.response.state // empty')
+
+        if [[ "$api_state" != "online" ]]; then
+            sleep 10
+        fi
     done
+
     echo "Tesla awoken @ $(date)"
 }
 
@@ -167,7 +173,7 @@ wake_tesla () {
 check_charge_state () {
     battery_state_json=$(tesla_api_call "GET" "vehicle_data" "")
 
-    charge_state=$(echo "$battery_state_json" | jq .response.charge_state)
+    charge_state=$(echo "$battery_state_json" | jq .response.response.charge_state)
     battery_level=$(echo "$charge_state" | jq .battery_level)
     charge_limit=$(echo "$charge_state" | jq .charge_limit_soc)
     charging_amps_max=$(echo "$charge_state" | jq .charge_current_request_max)

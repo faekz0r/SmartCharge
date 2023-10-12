@@ -10,7 +10,7 @@ For fully automated operation, the script can be added to a Linux machine's cron
 * awk
 
 
-It's mostly written in Bash, because it was the language I was most familiar with when I started this porject. Although I have considered rewriting it in Python, I'm amazed at how much can be accomplished with Bash, especially when complemented by other tools.
+It's mostly written in Bash, because it was the language I was most familiar with when I started this project. Although I have considered rewriting it in Python, I'm amazed at how much can be accomplished with Bash, especially when complemented by other tools.
 
 There's also a frontend for it [here](https://github.com/faekz0r/SmartCharge-frontend), which uses some php and js.
 
